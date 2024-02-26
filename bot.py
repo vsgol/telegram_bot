@@ -44,12 +44,12 @@ class TwitterFrameHandler:
     class __TweetLinkType:
             def __init__(self, link):
                 m = re.match(
-                    "^https?:\/\/(twitter\.com|x\.com)\/(?P<user_name>\w+)\/status(es)?\/(?P<tweet_id>\d+)(\S*)?",
+                    "^(https?:\/\/)?(www\.)?(twitter\.com|x\.com)\/(?P<user_name>\w+)\/status(es)?\/(?P<tweet_id>\d+)(\S*)?",
                     link,
                 )
                 if m is None:
                     raise argparse.ArgumentTypeError("Invalid link")
-                self.url = f"(https://)?(www\.)?twitter.com/{m.group('user_name')}/status/{m.group('tweet_id')}"
+                self.url = f"https://twitter.com/{m.group('user_name')}/status/{m.group('tweet_id')}"
                 self.user_name = m.group("user_name")
                 self.id = m.group("tweet_id")
 
