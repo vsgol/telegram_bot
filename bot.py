@@ -49,7 +49,7 @@ class TwitterFrameHandler:
                 )
                 if m is None:
                     raise argparse.ArgumentTypeError("Invalid link")
-                self.url = f"(https://)?twitter.com/{m.group('user_name')}/status/{m.group('tweet_id')}"
+                self.url = f"(https://)?(www\.)?twitter.com/{m.group('user_name')}/status/{m.group('tweet_id')}"
                 self.user_name = m.group("user_name")
                 self.id = m.group("tweet_id")
 
