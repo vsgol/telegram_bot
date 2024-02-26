@@ -83,7 +83,9 @@ class TwitterFrameHandler:
         )
         user_message = update.message.text
         try:
-            args = self.parser.parse_args(user_message.split())
+            args, argv = self.parser.parse_known_args(user_message.split())
+            if argv:
+                raise argparse.ArgumentError(None, f"Unrecognized arguments: {argv}")
         except argparse.ArgumentError as err:
             logger.error(
                 f"User entered the wrong arguments, message={user_message}", exc_info=True

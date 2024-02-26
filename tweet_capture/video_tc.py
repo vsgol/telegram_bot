@@ -23,7 +23,10 @@ def get_videos(driver, url, media_path, wait_time=15):
     driver.add_cookie(twtube_cookie)
     driver.get(download_endpoint)
 
-    entry_field = driver.switch_to.active_element
+    entry_field = driver.find_element(
+                By.XPATH,
+                "//html/body/div[3]/div[1]/div[2]/form/div/input[@id='url' and @name='url']"
+            )
     entry_field.send_keys(url)
     entry_field.send_keys(Keys.ENTER)
     try:
@@ -37,7 +40,7 @@ def get_videos(driver, url, media_path, wait_time=15):
         )
     except TimeoutException as err:
         raise TimeoutExceptionTC(
-            f"The video upload site didn't process the tweet in {2*wait_time} seconds"
+            f"The video upload site didn't process the tweet in {2*wait_time} seconds", download_endpoint
         ) from err
     for i, button in enumerate(download_buttons):
         video_url = button.find_element(By.XPATH, "..").get_attribute("href")

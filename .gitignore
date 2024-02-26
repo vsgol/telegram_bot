@@ -1,6 +1,7 @@
 config.py
 __pycache__
 */__pycache__
-telegram_bot.log
 .env
 .vscode
+*.log
+*.log.[-0-9]*
