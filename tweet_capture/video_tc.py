@@ -5,8 +5,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
-from tweet_capture.data_file import twtube_cookie
-from tweet_capture.exceptions_tc import TimeoutExceptionTC
+from .data_file import twtube_cookie
+from .exceptions_tc import TimeoutExceptionTC
 
 download_endpoint = "https://twtube.app/en/"
 
@@ -25,7 +25,7 @@ def get_videos(driver, url, media_path, wait_time=15):
 
     entry_field = driver.find_element(
                 By.XPATH,
-                "//html/body/div[3]/div[1]/div[2]/form/div/input[@id='url' and @name='url']"
+                "//html/body//input[@id='url' and @name='url']"
             )
     entry_field.send_keys(url)
     entry_field.send_keys(Keys.ENTER)

@@ -5,3 +5,4 @@ __pycache__
 .vscode
 *.log
 *.log.[-0-9]*
+test*

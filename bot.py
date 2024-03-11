@@ -17,9 +17,8 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from tweet_capture.exceptions_tc import BasicExceptionTC, WebdriverExceptionTC
-from tweet_capture.tweet_capture import TweetCapture
-from config import TELEGRAM_BOT_TOKEN
+from tweet_capture import TweetCapture, BasicExceptionTC, WebdriverExceptionTC
+from config import TELEGRAM_BOT_TOKEN, AUTHOR_ID
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
@@ -36,6 +35,11 @@ logger.addHandler(logger_handler)
 logger.setLevel(logging.INFO)
 
 class TwitterFrameHandler:
+    def __enter__(self):
+        return self
+    def __exit__(self):
+        self.tweet.quit()
+    
     tweet = TweetCapture()
     tweet.set_wait_time(15)
     
@@ -79,7 +83,7 @@ class TwitterFrameHandler:
 
     async def twitter_link_handler(self, update: Update, context):
         logger.info(
-            f"Message from {update.message.author_signature} with message {update.message.text}"
+            f"Message from {update.effective_user.name} with message {update.message.text}"
         )
         user_message = update.message.text
         try:
@@ -117,7 +121,7 @@ class TwitterFrameHandler:
                 only_screenshot=args.screenshot_only,
                 only_media=args.media_only,
             )
-            logger.info(f"Started sending answer to {update.message.author_signature}")
+            logger.info(f"Started sending answer to {update.effective_user.name}")
 
             if args.screenshot_only:
                 caption = f"Screenshot of {tweet.url}"
@@ -166,7 +170,7 @@ class TwitterFrameHandler:
             )
             return
 
-        logger.info(f"Finished with {update.message.author_signature}")
+        logger.info(f"Finished with {update.effective_user.name}")
         # Clean up: delete the screenshot file
         rmtree(media_path)
         rmtree(screenshot_path)
@@ -175,6 +179,15 @@ class TwitterFrameHandler:
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Send a message when the command /help is issued."""
         await update.message.reply_text(self.parser.format_help())
+
+# Add flags for more options
+async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send logs to me"""
+    if update.effective_user.id != AUTHOR_ID:
+        await update.message.reply_text("Sorry you don't have permissions to see this.")
+        return
+    await update.message.reply_document(document="telegram_bot.log")
+    return
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -186,25 +199,26 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 def main() -> None:
-    default_handler = TwitterFrameHandler()
+    with TwitterFrameHandler() as default_handler:
 
-    """Start the bot."""
-    # Create the Application and pass it your bot's token.
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+        """Start the bot."""
+        # Create the Application and pass it your bot's token.
+        application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # on different commands - answer in Telegram
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", default_handler.help_command))
-    
-    # on non command i.e message - echo the message on Telegram
-    application.add_handler(
-        MessageHandler(
-            filters.TEXT & ~filters.COMMAND, default_handler.twitter_link_handler
+        # on different commands - answer in Telegram
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("logs", logs))
+        application.add_handler(CommandHandler("help", default_handler.help_command))
+        
+        # on non command i.e message - echo the message on Telegram
+        application.add_handler(
+            MessageHandler(
+                filters.TEXT & ~filters.COMMAND, default_handler.twitter_link_handler
+            )
         )
-    )
 
-    # Run the bot until the user presses Ctrl-C
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+        # Run the bot until the user presses Ctrl-C
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":

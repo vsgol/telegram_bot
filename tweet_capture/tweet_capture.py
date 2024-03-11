@@ -6,10 +6,10 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
-from tweet_capture.exceptions_tc import BasicExceptionTC, TimeoutExceptionTC
+from .exceptions_tc import BasicExceptionTC, TimeoutExceptionTC
 
-from tweet_capture.video_tc import get_videos
-from tweet_capture.webdriver_tc import get_driver
+from .video_tc import get_videos
+from .webdriver_tc import get_driver
 
 
 class TweetCapture:
@@ -26,7 +26,9 @@ class TweetCapture:
         self.overwrite = overwrite
 
     async def capture(self, url, path, media_path, mode=None, night_mode=None, only_screenshot=False, only_media=False):
-        driver = await get_driver(self.driver_path)
+        if self.driver is None:
+            self.driver = await get_driver(self.driver_path)
+        driver = self.driver
         tweet_info = []
         try:
             driver.get(url)
@@ -80,12 +82,9 @@ class TweetCapture:
                 if len(videos) > 0:
                     get_videos(driver, url, media_path, self.wait_time)
 
-            driver.quit()
         except BasicExceptionTC as err:
-            driver.quit()
             raise err
         except Exception as err:
-            driver.quit()
             raise BasicExceptionTC() from err
         return tweet_info
 
@@ -192,3 +191,7 @@ class TweetCapture:
             """,
                 brdr[0],
             )
+
+    def quit(self):
+        if self.driver is not None:
+            self.driver.quit()
