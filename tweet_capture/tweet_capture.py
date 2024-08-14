@@ -1,3 +1,4 @@
+import asyncio
 import re
 import requests
 
@@ -15,15 +16,11 @@ from .webdriver_tc import get_driver
 class TweetCapture:
     driver = None
     driver_path = None
-    mode = 3
-    night_mode = 0
-    wait_time = 15
 
-    def __init__(self, mode=3, night_mode=0, test=True, overwrite=False):
-        self.set_night_mode(night_mode)
+    def __init__(self, mode=3, night_mode=0, wait_time = 15):
         self.set_mode(mode)
-        self.test = test
-        self.overwrite = overwrite
+        self.set_night_mode(night_mode)
+        self.set_wait_time(wait_time)
 
     async def capture(self, url, path, media_path, mode=None, night_mode=None, only_screenshot=False, only_media=False):
         if self.driver is None:
