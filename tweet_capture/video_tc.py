@@ -3,9 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-
-from .data_file import twtube_cookie
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from .exceptions_tc import TimeoutExceptionTC
 
 download_endpoint = "https://twtube.app/en/"
@@ -20,9 +18,20 @@ def get_videos(driver, url, media_path, wait_time=15):
     If the site doesn't respond for longer than {wait_time}, an exception is thrown.
     """
     driver.get(download_endpoint)
-    driver.add_cookie(twtube_cookie)
-    driver.get(download_endpoint)
-
+    try:
+        driver.find_element(
+                By.XPATH,
+                "//html/body//button[@class='fc-button fc-cta-manage-options fc-secondary-button']"
+            ).click()
+        driver.get(download_endpoint)
+        driver.find_element(
+                By.XPATH,
+                "//html/body//button[@class='fc-button fc-confirm-choices fc-primary-button', @aria-label='Confirm choices']"
+            ).click()
+        driver.get(download_endpoint)    
+    except NoSuchElementException:
+        True
+    
     entry_field = driver.find_element(
                 By.XPATH,
                 "//html/body//input[@id='url' and @name='url']"
