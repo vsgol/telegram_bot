@@ -21,23 +21,10 @@ from telegram.ext import (
     filters,
 )
 
-from tweet_capture import TweetCapture, BasicExceptionTC
+from tweet_capture import TweetCapture, BasicExceptionTC, get_logger
 from config import TELEGRAM_BOT_TOKEN, AUTHOR_ID
-import logging
-from logging.handlers import TimedRotatingFileHandler
 
-# Logger setup
-logger_handler = TimedRotatingFileHandler(
-    filename=f"{os.getcwd()}/telegram_bot.log", when="W4"
-)
-logger_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s — %(name)s — %(levelname)s — %(message)s", datefmt="%d/%m %H:%M:%S"
-    )
-)
-logger = logging.getLogger(__name__)
-logger.addHandler(logger_handler)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 class TwitterFrameHandler:
     def __enter__(self):

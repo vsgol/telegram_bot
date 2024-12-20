@@ -6,12 +6,14 @@ from os.path import exists
 from os import environ
 from math import ceil
 
-from tweet_capture.exceptions_tc import WebdriverExceptionTC
+from .exceptions_tc import WebdriverExceptionTC
+from .utils import get_chromedriver_default_path
+from .logger_config import get_logger
 
-from tweet_capture.utils import get_chromedriver_default_path
-
+logger = get_logger(__name__)
 
 async def get_driver(driver_path=None, gui=False, scale=1.0):
+    logger.info("Started launching the driver")
     chrome_options = Options()
     if scale < 1.0:
         scale = 1.0
@@ -36,9 +38,10 @@ async def get_driver(driver_path=None, gui=False, scale=1.0):
                 service=Service(executable_path=environ.get("CHROME_DRIVER")),
                 options=chrome_options,
             )
+            logger.info("Driver is running")
             return driver
         except Exception as e:
-            print(e)
+            logger.error(f"CHROME_DRIVER environment variable error: {e}")
             pass
 
     # driver_path argument : priority 2
@@ -49,9 +52,10 @@ async def get_driver(driver_path=None, gui=False, scale=1.0):
             driver = webdriver.Chrome(
                 service=Service(executable_path=driver_path), options=chrome_options
             )
+            logger.info("Driver is running")
             return driver
         except Exception as e:
-            print(e)
+            logger.error(f"driver_path argument error: {e}")
             pass
 
     # webdriver-manager : priority 3
@@ -59,9 +63,11 @@ async def get_driver(driver_path=None, gui=False, scale=1.0):
         driver = webdriver.Chrome(
             service=Service(ChromeDriverManager().install()), options=chrome_options
         )
+        logger.info("Driver is running")
         return driver
     except Exception as e:
-        print(e)
+        logger.error(f"webdriver-manager error: {e}")
         pass
-
+    
+    logger.error(f"Webdriver cannot be initialized")
     raise WebdriverExceptionTC("Webdriver cannot be initialized")

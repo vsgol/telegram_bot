@@ -4,7 +4,11 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+
 from .exceptions_tc import TimeoutExceptionTC
+from .logger_config import get_logger
+
+logger = get_logger(__name__)
 
 download_endpoint = "https://twtube.app/en/"
 
@@ -23,15 +27,14 @@ def get_videos(driver, url, media_path, wait_time=15):
                 By.XPATH,
                 "//html/body//button[@class='fc-button fc-cta-manage-options fc-secondary-button']"
             ).click()
-        driver.get(download_endpoint)
+        logger.info("Selecting options for the cookie")
         driver.find_element(
                 By.XPATH,
-                "//html/body//button[@class='fc-button fc-confirm-choices fc-primary-button', @aria-label='Confirm choices']"
+                "//html/body//button[@class='fc-button fc-confirm-choices fc-primary-button' and @aria-label='Confirm choices']"
             ).click()
-        driver.get(download_endpoint)    
     except NoSuchElementException:
-        True
-    
+        logger.info("No cookie choice window???")
+
     entry_field = driver.find_element(
                 By.XPATH,
                 "//html/body//input[@id='url' and @name='url']"
@@ -39,6 +42,7 @@ def get_videos(driver, url, media_path, wait_time=15):
     entry_field.send_keys(url)
     entry_field.send_keys(Keys.ENTER)
     try:
+        logger.info(f"Send link to wed service")
         download_buttons = WebDriverWait(driver, 2 * wait_time).until(
             EC.presence_of_all_elements_located(
                 (
@@ -52,6 +56,7 @@ def get_videos(driver, url, media_path, wait_time=15):
             f"The video upload site didn't process the tweet in {2*wait_time} seconds", download_endpoint
         ) from err
     for i, button in enumerate(download_buttons):
+        logger.info(f"Started downloading videos")
         video_url = button.find_element(By.XPATH, "..").get_attribute("href")
 
         with requests.get(video_url, stream=True) as response:
