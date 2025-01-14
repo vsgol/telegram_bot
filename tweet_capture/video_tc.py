@@ -55,11 +55,16 @@ def get_videos(driver, url, media_path, wait_time=15):
         raise TimeoutExceptionTC(
             f"The video upload site didn't process the tweet in {2*wait_time} seconds", download_endpoint
         ) from err
+    logger.info(f"Started downloading videos")
     for i, button in enumerate(download_buttons):
-        logger.info(f"Started downloading videos")
+        if "gif" in button.text.lower():
+            extension = "gif"
+        else: 
+            extension = "mp4"
+            
         video_url = button.find_element(By.XPATH, "..").get_attribute("href")
 
         with requests.get(video_url, stream=True) as response:
-            with open(f"{media_path}/video_{i}.mp4", "wb") as video:
+            with open(f"{media_path}/video_{i}.{extension}", "wb") as video:
                 for chunk in response.iter_content(chunk_size=8 * 1024):
                     video.write(chunk)

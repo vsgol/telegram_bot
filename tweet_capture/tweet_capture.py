@@ -65,18 +65,13 @@ class TweetCapture:
             if not only_media:
                 tweet.screenshot(f"{path}/screenshot.png")            
             
-            tweet_media = tweet.find_elements(
-                By.XPATH,
-                "//article/div/div/div[3]/div[2]/div/div/div[not (@dir='ltr') and not (@role='link')]",
-            )
-            if not only_screenshot and len(tweet_media) > 0:
-                tweet_media = tweet_media[0]
+            tweet_media = tweet.find_elements(By.XPATH, "//article//div[@data-testid='tweetPhoto']/img")
+            tweet_video = tweet.find_elements(By.XPATH, "//article//div[@data-testid='videoComponent']")
+            
+            if not only_screenshot and (len(tweet_media) > 0 or len(tweet_video) > 0):
                 self.__get_photos(tweet_media, media_path)
-
-                videos = tweet_media.find_elements(
-                    By.CSS_SELECTOR, "div[data-testid='videoPlayer']"
-                )
-                if len(videos) > 0:
+                
+                if len(tweet_video) > 0:
                     get_videos(driver, url, media_path, self.wait_time)
 
         except BasicExceptionTC as err:
@@ -85,11 +80,8 @@ class TweetCapture:
             raise BasicExceptionTC() from err
         return tweet_info
 
-    def __get_photos(self, tweet, media_path):
-        media_elements = tweet.find_elements(
-            By.CSS_SELECTOR, "div[data-testid='tweetPhoto'] > img"
-        )
-        for i, el in enumerate(media_elements):
+    def __get_photos(self, tweet_media, media_path):
+        for i, el in enumerate(tweet_media):
             src = el.get_attribute("src")
             src = re.sub("(?<=&name=)small", "large", src)
             img_data = requests.get(src).content

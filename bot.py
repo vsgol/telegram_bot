@@ -229,7 +229,7 @@ async def send_media_message(update: Update, context: ContextTypes.DEFAULT_TYPE,
                         has_spoiler=choices["censor"],
                     )
                 )
-            elif file.endswith(".mp4"):
+            elif file.endswith(".mp4") or file.endswith(".gif"):
                 media_group.append(
                     InputMediaVideo(
                         open(os.path.join(path, file), "rb"),
