@@ -65,8 +65,8 @@ class TweetCapture:
             if not only_media:
                 tweet.screenshot(f"{path}/screenshot.png")            
             
-            tweet_media = tweet.find_elements(By.XPATH, "//article//div[@data-testid='tweetPhoto']/img")
-            tweet_video = tweet.find_elements(By.XPATH, "//article//div[@data-testid='videoComponent']")
+            tweet_media = tweet.find_elements(By.XPATH, "//article//div[@data-testid='tweetPhoto' and not(ancestor::div[@role='link'])]/img")
+            tweet_video = tweet.find_elements(By.XPATH, "//article//div[@data-testid='videoComponent' and not(ancestor::div[@role='link'])]")
             
             if not only_screenshot and (len(tweet_media) > 0 or len(tweet_video) > 0):
                 self.__get_photos(tweet_media, media_path)
