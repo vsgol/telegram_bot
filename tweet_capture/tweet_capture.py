@@ -5,7 +5,7 @@ import requests
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, InvalidSessionIdException, WebDriverException
 
 from .exceptions_tc import BasicExceptionTC, TimeoutExceptionTC
 
@@ -23,7 +23,7 @@ class TweetCapture:
         self.set_wait_time(wait_time)
 
     async def capture(self, url, path, media_path, mode=None, night_mode=None, only_screenshot=False, only_media=False):
-        if self.driver is None:
+        if self.driver is None or self.__driver_alive(self.driver):
             self.driver = await get_driver(self.driver_path)
         driver = self.driver
         tweet_info = []
@@ -37,19 +37,18 @@ class TweetCapture:
             )
             driver.get(url)
 
-            self.__init_scale_css(driver)
-
-            self.__hide_global_items(driver)
-            driver.execute_script(
-                "!!document.activeElement ? document.activeElement.blur() : 0"
-            )
-
             try:
                 tweet = WebDriverWait(driver, self.wait_time).until(
-                    EC.presence_of_all_elements_located(
-                        (By.CSS_SELECTOR, "article[data-testid='tweet']")
-                    )
-                )[0]
+                    EC.presence_of_element_located((By.XPATH, "//article[@data-testid='tweet']"))
+                )
+
+                self.__init_scale_css(driver)
+
+                self.__hide_global_items(driver)
+                driver.execute_script(
+                    "!!document.activeElement ? document.activeElement.blur() : 0"
+                )
+
             except TimeoutException as err:
                 raise TimeoutExceptionTC(
                     f"Tweet wasn't uploaded in {self.wait_time} seconds", url=url
@@ -80,6 +79,13 @@ class TweetCapture:
             raise BasicExceptionTC() from err
         return tweet_info
 
+    def __driver_alive(driver):
+        try:
+            driver.title
+            return True
+        except (InvalidSessionIdException, WebDriverException):
+            return False
+
     def __get_photos(self, tweet_media, media_path):
         for i, el in enumerate(tweet_media):
             src = el.get_attribute("src")
@@ -102,11 +108,11 @@ class TweetCapture:
     def set_webdriver_path(self, path):
         self.driver_path = path
 
-    def __init_scale_css(self, driver):
+    def __init_scale_css(self, driver):  # .r-rthrr5 { width: 100% !important; } idk twitter removed it
         driver.execute_script(
             """
             var style = document.createElement('style');
-            style.innerHTML = ".r-1ye8kvj { max-width: 40rem !important; } .r-rthrr5 { width: 100% !important; } body { scale: 1 !important; transform-origin: 0 0 !important; }";
+            style.innerHTML = ".r-1ye8kvj { max-width: 40rem !important; } body { scale: 1 !important; transform-origin: 0 0 !important; }";
             document.head.appendChild(style);
         """
         )
@@ -116,7 +122,10 @@ class TweetCapture:
             "/html/body/div/div/div/div[1]",
             "/html/body/div/div/div/div[2]/header",
             "/html/body/div/div/div/div[2]/main/div/div/div/div/div/div[1]",
-            ".//ancestor::div[@data-testid = 'tweetButtonInline']/../../../../../../../../../../..",
+            "//div[@data-testid='BottomBar' and contains(@style,'transition-property')]",
+            "(//ancestor::div[@dir = 'ltr'])"
+            "//article[@data-testid='tweet']//button[contains(@aria-label,'Grok')]",
+            "//article[@data-testid='tweet']//a[@data-testid='logged_out_read_replies_pivot']",
         ]
         for item in HIDE_ITEMS_XPATH:
             try:
@@ -142,24 +151,19 @@ class TweetCapture:
 
     def __code_main_footer_items_new(self, element, mode):
         XPATHS = [
-            "((//ancestor::time)/..)[contains(@aria-describedby, 'id__')]",
-            ".//div[contains(@role, 'group')][not(contains(@id, 'id__'))]",
-            ".//div[contains(@role, 'group')][contains(@id, 'id__')]",
-            ".//div[contains(@data-testid, 'caret')]",
-            "((//ancestor::span)/..)[contains(@role, 'button')]",
-            ".//div[contains(@data-testid, 'caret')]/../../../../..",
+            "((//ancestor::time)/..)[contains(@aria-describedby, 'id__')]",  # date
+            "//div[contains(@role, 'group')][not(contains(@id, 'id__'))]",  # date 2????
+            "//div[contains(@role, 'group')][contains(@id, 'id__')]",  # likes/replies/reply
         ]
         hides = []
         if mode == 0:
-            hides = [0, 1, 2, 3, 4, 5]
+            hides = [0, 1, 2]
         elif mode == 1:
-            hides = [0, 2, 3, 4, 5]
+            hides = [0, 2]
         elif mode == 2:
-            hides = [2, 3, 4, 5]
+            hides = [2]
         elif mode == 3:
-            hides = [3, 4, 5]
-        elif mode == 4:
-            hides = [1, 2, 3, 4, 5]
+            hides = []
 
         for i in hides:
             els = element.find_elements(By.XPATH, XPATHS[i])
@@ -172,14 +176,6 @@ class TweetCapture:
                         el,
                     )
 
-        brdr = element.find_elements(By.XPATH, XPATHS[2])
-        if len(brdr) == 1:
-            element.parent.execute_script(
-                """
-            arguments[0].style.borderBottom="none";
-            """,
-                brdr[0],
-            )
 
     def quit(self):
         if self.driver is not None:

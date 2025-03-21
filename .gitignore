@@ -6,3 +6,4 @@ __pycache__
 *.log
 *.log.[-0-9]*
 test*
+screenshots*

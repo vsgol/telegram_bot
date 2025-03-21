@@ -59,9 +59,9 @@ class TwitterFrameHandler:
     parser.add_argument("twitter_link", type=__TweetLinkType)
     parser.add_argument(
         "--mode",
-        default=2,
+        default=3,
         type=int,
-        help="Display mode for tweet (0-4)",
+        help="Display mode for tweet (0-3)",
         nargs="?",
     )
     parser.add_argument(
