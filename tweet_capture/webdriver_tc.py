@@ -1,3 +1,4 @@
+import tempfile
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -7,7 +8,6 @@ from os import environ
 from math import ceil
 
 from .exceptions_tc import WebdriverExceptionTC
-from .utils import get_chromedriver_default_path
 from .logger_config import get_logger
 
 logger = get_logger(__name__)
@@ -31,43 +31,19 @@ async def get_driver(driver_path=None, gui=False, scale=1.0):
 
     chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
-    # CHROME_DRIVER environment variable : priority 1
-    if environ.get("CHROME_DRIVER") is not None:
-        try:
-            driver = webdriver.Chrome(
-                service=Service(executable_path=environ.get("CHROME_DRIVER")),
-                options=chrome_options,
-            )
-            logger.info("Driver is running")
-            return driver
-        except Exception as e:
-            logger.error(f"CHROME_DRIVER environment variable error: {e}")
-            pass
-
     # driver_path argument : priority 2
-    if driver_path is None:
-        driver_path = get_chromedriver_default_path()
-    if exists(driver_path):
-        try:
-            driver = webdriver.Chrome(
-                service=Service(executable_path=driver_path), options=chrome_options
-            )
-            logger.info("Driver is running")
-            return driver
-        except Exception as e:
-            logger.error(f"driver_path argument error: {e}")
-            pass
-
-    # webdriver-manager : priority 3
+    driver_path = "/usr/local/bin/chromedriver"
+    chrome_options.binary_location = "/usr/local/bin/chrome"
+    
     try:
         driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()), options=chrome_options
+            service=Service(executable_path=driver_path), options=chrome_options
         )
         logger.info("Driver is running")
         return driver
     except Exception as e:
-        logger.error(f"webdriver-manager error: {e}")
+        logger.error(f"driver_path argument error: {e}")
         pass
-    
+
     logger.error(f"Webdriver cannot be initialized")
     raise WebdriverExceptionTC("Webdriver cannot be initialized")

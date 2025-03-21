@@ -22,7 +22,9 @@ from telegram.ext import (
 )
 
 from tweet_capture import TweetCapture, BasicExceptionTC, get_logger
-from config import TELEGRAM_BOT_TOKEN, AUTHOR_ID
+
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN') 
+AUTHOR_ID = int(os.getenv('TELEGRAM_BOT_AUTHOR'))
 
 logger = get_logger(__name__)
 
@@ -325,6 +327,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Add flags for more options
 async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send logs to me"""
+    logger.info(f"Asked for logs {update.effective_user.name}, {update.effective_user.id}")
     if update.effective_user.id != AUTHOR_ID:
         await update.message.reply_text("Sorry you don't have permissions to see this.")
         return
