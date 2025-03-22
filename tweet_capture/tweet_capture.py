@@ -16,6 +16,7 @@ from .webdriver_tc import get_driver
 class TweetCapture:
     driver = None
     driver_path = None
+    driver_lock = asyncio.Lock()
 
     def __init__(self, mode=3, night_mode=0, wait_time = 15):
         self.set_mode(mode)
@@ -23,68 +24,79 @@ class TweetCapture:
         self.set_wait_time(wait_time)
 
     async def capture(self, url, path, media_path, mode=None, night_mode=None, only_screenshot=False, only_media=False):
-        if self.driver is None or not self.__driver_alive(self.driver):
-            self.driver = await get_driver(self.driver_path)
-        driver = self.driver
-        tweet_info = []
-        try:
-            driver.get(url)
-            driver.add_cookie(
-                {
-                    "name": "night_mode",
-                    "value": str(self.night_mode if night_mode is None else night_mode),
-                }
-            )
-            driver.get(url)
+        async with self.driver_lock:
+            if not self.__driver_alive(self.driver):
+                try:
+                    driver.quit()
+                except Exception as e:
+                    pass
+                finally:
+                    driver = None
 
+            if self.driver is None:
+                self.driver = await get_driver(self.driver_path)
+            driver = self.driver
+            tweet_info = []
             try:
-                tweet = WebDriverWait(driver, self.wait_time).until(
-                    EC.presence_of_element_located((By.XPATH, "//article[@data-testid='tweet']"))
+                driver.get(url)
+                driver.add_cookie(
+                    {
+                        "name": "night_mode",
+                        "value": str(self.night_mode if night_mode is None else night_mode),
+                    }
                 )
+                driver.get(url)
 
-                self.__init_scale_css(driver)
+                try:
+                    tweet = WebDriverWait(driver, self.wait_time).until(
+                        EC.presence_of_element_located((By.XPATH, "//article[@data-testid='tweet']"))
+                    )
 
-                self.__hide_global_items(driver)
-                driver.execute_script(
-                    "!!document.activeElement ? document.activeElement.blur() : 0"
+                    self.__init_scale_css(driver)
+
+                    self.__hide_global_items(driver)
+                    driver.execute_script(
+                        "!!document.activeElement ? document.activeElement.blur() : 0"
+                    )
+
+                except TimeoutException as err:
+                    raise TimeoutExceptionTC(
+                        f"Tweet wasn't uploaded in {self.wait_time} seconds", url=url
+                    ) from err
+                self.__code_main_footer_items_new(
+                    tweet, self.mode if mode is None else mode
                 )
+                self.__margin_tweet(self.mode if mode is None else mode, tweet)
+                driver.execute_script("window.scrollTo(0, 0);")
+                if tweet.find_elements(By.CSS_SELECTOR, "svg[data-testid='icon-verified']"):
+                    tweet_info.append("TB")
 
-            except TimeoutException as err:
-                raise TimeoutExceptionTC(
-                    f"Tweet wasn't uploaded in {self.wait_time} seconds", url=url
-                ) from err
-            self.__code_main_footer_items_new(
-                tweet, self.mode if mode is None else mode
-            )
-            self.__margin_tweet(self.mode if mode is None else mode, tweet)
-            driver.execute_script("window.scrollTo(0, 0);")
-            if tweet.find_elements(By.CSS_SELECTOR, "svg[data-testid='icon-verified']"):
-                tweet_info.append("TB")
-
-            if not only_media:
-                tweet.screenshot(f"{path}/screenshot.png")            
-            
-            tweet_media = tweet.find_elements(By.XPATH, "//article//div[@data-testid='tweetPhoto' and not(ancestor::div[@role='link'])]/img")
-            tweet_video = tweet.find_elements(By.XPATH, "//article//div[@data-testid='videoComponent' and not(ancestor::div[@role='link'])]")
-            
-            if not only_screenshot and (len(tweet_media) > 0 or len(tweet_video) > 0):
-                self.__get_photos(tweet_media, media_path)
+                if not only_media:
+                    tweet.screenshot(f"{path}/screenshot.png")            
                 
-                if len(tweet_video) > 0:
-                    get_videos(driver, url, media_path, self.wait_time)
+                tweet_media = tweet.find_elements(By.XPATH, "//article//div[@data-testid='tweetPhoto' and not(ancestor::div[@role='link'])]/img")
+                tweet_video = tweet.find_elements(By.XPATH, "//article//div[@data-testid='videoComponent' and not(ancestor::div[@role='link'])]")
+                
+                if not only_screenshot and (len(tweet_media) > 0 or len(tweet_video) > 0):
+                    self.__get_photos(tweet_media, media_path)
+                    
+                    if len(tweet_video) > 0:
+                        get_videos(driver, url, media_path, self.wait_time)
 
-        except BasicExceptionTC as err:
-            raise err
-        except Exception as err:
-            raise BasicExceptionTC() from err
-        return tweet_info
+            except BasicExceptionTC as err:
+                raise err
+            except Exception as err:
+                raise BasicExceptionTC() from err
+            return tweet_info
 
     def __driver_alive(self, driver):
-        try:
-            driver.title
-            return True
-        except (InvalidSessionIdException, WebDriverException):
-            return False
+        if driver is not None:
+            try:
+                driver.title
+                return True
+            except (InvalidSessionIdException, WebDriverException):
+                return False
+        return False
 
     def __get_photos(self, tweet_media, media_path):
         for i, el in enumerate(tweet_media):
