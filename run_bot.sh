@@ -11,6 +11,3 @@ docker compose down --remove-orphans
 
 echo "Starting the bot container..."
 docker compose up -d
-
-echo "Showing logs:"
-docker compose logs -f $SERVICE_NAME
