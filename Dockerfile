@@ -24,6 +24,8 @@ RUN export CHROME_JSON=$(curl -s https://googlechromelabs.github.io/chrome-for-t
 
 
 # Cloning Telegram bot
+ADD https://api.github.com/repos/vsgol/telegram_bot/git/refs/heads/main git-version.json
+
 WORKDIR /app
 RUN git clone https://github.com/vsgol/telegram_bot.git .
 RUN pip install --upgrade pip

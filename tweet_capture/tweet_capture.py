@@ -23,7 +23,7 @@ class TweetCapture:
         self.set_wait_time(wait_time)
 
     async def capture(self, url, path, media_path, mode=None, night_mode=None, only_screenshot=False, only_media=False):
-        if self.driver is None or self.__driver_alive(self.driver):
+        if self.driver is None or not self.__driver_alive(self.driver):
             self.driver = await get_driver(self.driver_path)
         driver = self.driver
         tweet_info = []
