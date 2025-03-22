@@ -255,7 +255,7 @@ async def send_media_message(update: Update, context: ContextTypes.DEFAULT_TYPE,
             chat_id=user_data["chat_id"],
             media=media_group,
             caption=caption,
-            reply_to_message_id=user_data["user_message_id"]
+            reply_to_message_id=control_message_id
         )
         user_data["media_message_ids"] = [m.message_id for m in media_messages]
     except Exception as e:
