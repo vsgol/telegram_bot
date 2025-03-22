@@ -79,7 +79,7 @@ class TweetCapture:
             raise BasicExceptionTC() from err
         return tweet_info
 
-    def __driver_alive(driver):
+    def __driver_alive(self, driver):
         try:
             driver.title
             return True
